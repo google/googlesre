@@ -1,0 +1,53 @@
+<!--
+ Copyright 2020 Google LLC
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<div class="row">
+  <h2>Photos</h2>
+  <form class="form-inline md-form mr-auto mb-4" enctype="multipart/form-data" class="search-bar">
+    <input
+      [(ngModel)]="keyword"
+      autocomplete="off"
+      placeholder="Search a keyword ..."
+      name="keyword"
+      id="keyword"
+      class="form-control mr-sm-2"
+      type="text"
+      placeholder="Search"
+      aria-label="Search"
+    />
+    <button
+      mat-button
+      color="primary"
+      (click)="searchImages()"
+      class="my-0 waves-light"
+      mdbWavesEffect
+      type="submit"
+      value="Search"
+    >
+      Search
+    </button>
+    <button mat-button color="primary" (click)="openUploadForm()" value="Upload">
+      Upload New Image
+    </button>
+  </form>
+  <ul id="thumbnailsList">
+    <li *ngFor="let imageUrl of imgUrls" class="img">
+      <a (click)="onImageClick(imageUrl)">
+        <img src="{{ imageUrl }}" class="tn" alt="thumbnail image" />
+      </a>
+    </li>
+  </ul>
+</div>

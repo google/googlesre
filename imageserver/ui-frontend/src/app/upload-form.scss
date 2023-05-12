@@ -1,0 +1,72 @@
+/**
+ * Copyright 2020 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.mat-dialog-container {
+    display: block;
+    backface-visibility: hidden;
+    background: lightblue;
+    border: 20 px;
+    padding: 24px;
+    border-radius: 4px;
+    box-sizing: border-box;
+    position: absolute;
+    overflow: hidden;
+    outline: 0;
+    width: auto;
+    height: auto;
+    min-height: inherit;
+    max-height: inherit;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+
+.mat-standard-chip {
+    transition: box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    padding: 7px 12px;
+    border-radius: 16px;
+    background: cadetblue;
+    align-items: center;
+    cursor: default;
+    min-height: 32px;
+    height: 1px;
+}
+
+.mat-dialog-content {
+    display: block;
+    padding: 0 24px;
+    height: auto;
+    overflow: hidden;
+}
+
+input.mat-chip-input {
+    width: 200 px;
+    margin: 15px;
+    padding: 10px;
+    background: aliceblue;
+    flex: 1 0 150px;
+    flex-grow: 1;
+    flex-shrink: 0;
+    flex-basis: 150px;
+}
+
+p {
+    margin: 0 0 10px;
+    padding-top: 20px;
+}

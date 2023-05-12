@@ -1,0 +1,129 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ui-frontend
+  name: ui-frontend
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ui-frontend
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: ui-frontend
+    spec:
+      containers:
+        - image: gcr.io/sre-classroom-image-server/ui-frontend
+          imagePullPolicy: IfNotPresent
+          name: ui-frontend-1
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  labels:
+    app: ui-frontend
+  name: ui-frontend-hpa-hnpt
+  namespace: default
+spec:
+  maxReplicas: 5
+  metrics:
+    - resource:
+        name: cpu
+        targetAverageUtilization: 80
+      type: Resource
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ui-frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ui-frontend-service
+  namespace: default
+  labels:
+    app: ui-frontend
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  ports:
+  - protocol: TCP
+    port: 80
+  selector:
+    app: ui-frontend
+  type: NodePort
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: external-ingress
+  namespace: default
+spec:
+  backend:
+    serviceName: ui-frontend-service
+    servicePort: 80
+  rules:
+  - http:
+      paths:
+      - path: /download/*
+        backend:
+          serviceName: download-frontend-service
+          servicePort: 8080
+      - path: /search
+        backend:
+          serviceName: search-frontend-service
+          servicePort: 8080
+      - path: /upload
+        backend:
+          serviceName: upload-frontend-service
+          servicePort: 8080
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: internal-ingress
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: "gce-internal"
+spec:
+  backend:
+    serviceName: ui-frontend-service
+    servicePort: 80
+  rules:
+  - http:
+      paths:
+      - path: /download/*
+        backend:
+          serviceName: download-frontend-service
+          servicePort: 8080
+      - path: /search
+        backend:
+          serviceName: search-frontend-service
+          servicePort: 8080
+      - path: /upload
+        backend:
+          serviceName: upload-frontend-service
+          servicePort: 8080

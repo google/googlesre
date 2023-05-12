@@ -1,0 +1,37 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package grpc;
+option go_package = "app/protos";
+
+message GetThumbnailImagesRequest {
+  // if keyword=="latest", return recent photo
+  // in the service, we will update metadata such as download_times accordingly
+  string search_keyword = 1;
+}
+
+message GetThumbnailImagesResponse {
+  // get the storage image-serving address and return
+  repeated string storage_url = 1;
+}
+
+service GetThumbnail {
+  /*
+    RPC for getting the UIDs of images relevant to the keyword
+   */
+  rpc GetThumbnail(GetThumbnailImagesRequest)
+      returns (GetThumbnailImagesResponse);
+}

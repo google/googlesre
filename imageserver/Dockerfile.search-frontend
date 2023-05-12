@@ -1,0 +1,10 @@
+FROM docker.io/library/golang
+
+WORKDIR /go/src/app
+COPY search-frontend search-frontend
+COPY protos protos
+COPY go.* ./
+RUN go get -d app/search-frontend
+RUN go install app/search-frontend
+
+ENTRYPOINT ["/go/bin/search-frontend"]

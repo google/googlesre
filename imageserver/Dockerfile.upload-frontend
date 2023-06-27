@@ -1,0 +1,10 @@
+FROM docker.io/library/golang
+
+WORKDIR /go/src/app
+COPY upload-frontend upload-frontend
+COPY protos protos
+COPY go.* ./
+RUN go get -d app/upload-frontend
+RUN go install app/upload-frontend
+
+ENTRYPOINT ["/go/bin/upload-frontend"]

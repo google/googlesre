@@ -1,0 +1,10 @@
+FROM docker.io/library/golang
+
+WORKDIR /go/src/app
+COPY download-frontend download-frontend
+COPY protos protos
+COPY go.* ./
+RUN go get -d app/download-frontend
+RUN go install app/download-frontend
+
+ENTRYPOINT ["/go/bin/download-frontend"]

@@ -1,0 +1,9 @@
+FROM docker.io/library/node:16
+WORKDIR /app
+COPY ui-frontend .
+RUN npm ci
+RUN npm run ng build -- --prod
+
+FROM docker.io/library/nginx
+WORKDIR /usr/share/nginx/html
+COPY --from=0 /app/dist/ui-frontend .

@@ -1,0 +1,10 @@
+FROM docker.io/library/golang
+
+WORKDIR /go/src/app
+COPY download-backend download-backend
+COPY protos protos
+COPY go.* ./
+RUN go get -d app/download-backend
+RUN go install app/download-backend
+
+ENTRYPOINT ["/go/bin/download-backend"]

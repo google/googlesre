@@ -1,0 +1,78 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/$_CONTAINER_NAME:$_TAG'
+      - .
+      - '-f'
+      - 'Dockerfile.$_CONTAINER_NAME'
+    id: Build
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - 'gcr.io/$PROJECT_ID/$_CONTAINER_NAME:$_TAG'
+    id: Push
+  - name: gcr.io/cloud-builders/gsutil
+    args:
+      - '-c'
+      - |-
+        sed -i 's|gcr.io/.*|gcr.io/$PROJECT_ID/$_CONTAINER_NAME|' kubernetes/$_CONTAINER_NAME.yaml
+        sed -i 's|BUCKET_NAME|${PROJECT_ID}_photos|' kubernetes/$_CONTAINER_NAME.yaml
+        sed -i 's|FIRESTORE_PROJECT|$PROJECT_ID|' kubernetes/$_CONTAINER_NAME.yaml
+    id: Prepare configs
+    entrypoint: sh
+  - name: gcr.io/cloud-builders/gke-deploy
+    args:
+      - prepare
+      - '--filename=kubernetes/$_CONTAINER_NAME.yaml'
+      - '--image=gcr.io/$PROJECT_ID/$_CONTAINER_NAME:$_TAG'
+      - '--app=$_CONTAINER_NAME'
+      - '--version=$_TAG'
+      - '--namespace=$_K8S_NAMESPACE'
+      - '--annotation=gcb-build-id=$BUILD_ID'
+      - '--create-application-cr'
+      - >-
+        --links="Build
+        details=https://console.cloud.google.com/cloud-build/builds/$BUILD_ID?project=$PROJECT_ID"
+      - '--output=output'
+    id: Prepare deploy
+  - name: gcr.io/cloud-builders/gsutil
+    args:
+      - '-c'
+      - |-
+        gsutil cp -r output/suggested gs://${PROJECT_ID}_cloudbuild/deploy/config/$_CONTAINER_NAME/$BUILD_ID/suggested
+        gsutil cp -r output/expanded gs://${PROJECT_ID}_cloudbuild/deploy/config/$_CONTAINER_NAME/$BUILD_ID/expanded
+    id: Save configs
+    entrypoint: sh
+  - name: gcr.io/cloud-builders/gke-deploy
+    args:
+      - apply
+      - '--filename=output/expanded'
+      - '--cluster=$_GKE_CLUSTER'
+      - '--location=$_GKE_LOCATION'
+      - '--namespace=$_K8S_NAMESPACE'
+    id: Apply deploy
+images:
+  - 'gcr.io/$PROJECT_ID/$_CONTAINER_NAME:$_TAG'
+options:
+  substitutionOption: ALLOW_LOOSE
+substitutions:
+  _K8S_NAMESPACE: default
+tags:
+  - gcp-cloud-build-deploy
+  - $_CONTAINER_NAME

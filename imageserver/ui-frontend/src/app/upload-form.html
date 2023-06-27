@@ -1,0 +1,44 @@
+<!--
+ Copyright 2020 Google LLC
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<div class="mat-dialog-container">
+<form>
+<h1 mat-dialog-title>Upload New Image</h1>
+<div mat-dialog-content>
+    <input type="file" name="file" id="file" accept=".png,.jpg,.jpeg,.gif" style="top:-100px;" (change)="onFileChange($event.target.files)" multiple>
+        <p>Add new hashtag for the image: </p>
+      <div>
+        <mat-form-field>
+          <mat-chip-list #chipList>
+            <mat-chip *ngFor="let chip of chips" [removable]="true" [selectable]="false" (removed)="removeChip(chip)">
+              {{ chip }}
+      <ace-icon matChipRemove icon="cancel"></ace-icon>
+            </mat-chip>
+          </mat-chip-list>
+          <input
+            [matChipInputFor]="chipList"
+            [matChipInputAddOnBlur]="true"
+            (matChipInputTokenEnd)="addChip($event)"
+          />
+        </mat-form-field>
+      </div>
+</div>
+<div mat-dialog-actions>
+  <button mat-button color="primary" (click)="onNoClick()">Cancel</button>
+  <button mat-button color="primary" (click)="onUploadClick()">Upload</button>
+</div>
+  </form>
+</div>

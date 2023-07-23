@@ -17,6 +17,7 @@
 set -e
 
 CLUSTER_NAME=${CLUSTER_NAME:-cluster-1}
+LOCATION=${LOCATION:-nam5}
 REGION=${REGION:-us-central}
 ZONE=${ZONE:-us-central1-c}
 MACHINE_TYPE=${MACHINE_TYPE:-e2-standard-2}
@@ -186,8 +187,10 @@ create_firestore() {
     gcloud app create --region="${REGION}"
   fi
 
-  log "Creating firestore database"
-  gcloud alpha firestore databases create --region="${REGION}"
+  if ! gcloud firestore databases list 2>/dev/null | grep -q name:; then
+    log "Creating firestore database"
+    gcloud firestore databases create --location="${LOCATION}"
+  fi
   enable_api firestore.googleapis.com
 }
 

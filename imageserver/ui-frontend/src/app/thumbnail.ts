@@ -16,7 +16,7 @@
 
 import {HttpClient, HttpHeaders} from '@angular/common/http';
 import {Component, OnChanges, OnInit} from '@angular/core';
-import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {UntypedFormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {MatButtonModule} from '@angular/material/button';
 import {MatChipInputEvent, MatChipsModule} from '@angular/material/chips';
 import {MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef} from '@angular/material/dialog';
@@ -104,7 +104,7 @@ export class UploadForm {
   fileList: FileList|null = null;
 
   constructor(
-      private auth: AuthService, private fb: FormBuilder,
+      private auth: AuthService, private fb: UntypedFormBuilder,
       private dialogRef: MatDialogRef<UploadForm>,
       private httpClient: HttpClient) {
     this.user = this.auth.authUser();

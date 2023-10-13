@@ -35,31 +35,30 @@ import { Navbar } from './navbar';
 import { Thumbnail, UploadForm } from './thumbnail';
 
 @NgModule({
-  declarations: [
-    AppComponent,
-    Thumbnail,
-    UploadForm,
-    Navbar,
-    Login,
-    Download
-  ],
-  imports: [
-    MatChipsModule,
-    BrowserAnimationsModule,
-    AppRoutingModule,
-    MatDialogModule,
-    MatInputModule,
-    ReactiveFormsModule,
-    FormsModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    HttpClientModule,
-  ],
-  providers: [
-    AuthGuard,
-    AuthService
-  ],
-  bootstrap: [AppComponent],
-  entryComponents: [UploadForm],
+    declarations: [
+        AppComponent,
+        Thumbnail,
+        UploadForm,
+        Navbar,
+        Login,
+        Download
+    ],
+    imports: [
+        MatChipsModule,
+        BrowserAnimationsModule,
+        AppRoutingModule,
+        MatDialogModule,
+        MatInputModule,
+        ReactiveFormsModule,
+        FormsModule,
+        MatButtonModule,
+        MatFormFieldModule,
+        HttpClientModule,
+    ],
+    providers: [
+        AuthGuard,
+        AuthService
+    ],
+    bootstrap: [AppComponent]
 })
 export class AppModule { }

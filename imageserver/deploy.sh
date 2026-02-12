@@ -169,14 +169,14 @@ build_containers() {
 }
 
 create_bucket() {
-  check_command gsutil
+  check_command gcloud
 
   local bucket="gs://${PROJECT_ID}_photos"
-  if gsutil ls | grep -qF "$bucket"; then
+  if gcloud storage ls | grep -qF "$bucket"; then
     log "Using existing bucket: $bucket"
   else
     log "Creating new bucket: $bucket"
-    gsutil mb "$bucket"
+    gcloud storage buckets create "$bucket"
   fi
 }
 

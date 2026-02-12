@@ -51,12 +51,12 @@ steps:
         details=https://console.cloud.google.com/cloud-build/builds/$BUILD_ID?project=$PROJECT_ID"
       - '--output=output'
     id: Prepare deploy
-  - name: gcr.io/cloud-builders/gsutil
+  - name: gcr.io/cloud-builders/gcloud
     args:
       - '-c'
       - |-
-        gsutil cp -r output/suggested gs://${PROJECT_ID}_cloudbuild/deploy/config/$_CONTAINER_NAME/$BUILD_ID/suggested
-        gsutil cp -r output/expanded gs://${PROJECT_ID}_cloudbuild/deploy/config/$_CONTAINER_NAME/$BUILD_ID/expanded
+        gcloud storage cp --recursive output/suggested gs://${PROJECT_ID}_cloudbuild/deploy/config/$_CONTAINER_NAME/$BUILD_ID/suggested
+        gcloud storage cp --recursive output/expanded gs://${PROJECT_ID}_cloudbuild/deploy/config/$_CONTAINER_NAME/$BUILD_ID/expanded
     id: Save configs
     entrypoint: sh
   - name: gcr.io/cloud-builders/gke-deploy

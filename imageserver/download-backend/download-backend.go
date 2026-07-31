@@ -16,25 +16,33 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"flag"
 	"net"
 
+	"app/blobstore"
+	"app/blobstore/gcs"
+	"app/blobstore/s3"
 	pb "app/protos"
-	"cloud.google.com/go/storage"
 	"github.com/golang/glog"
 	"google.golang.org/grpc"
 )
 
 var (
 	listenPort    = flag.String("listen_port", ":8080", "start server on this port")
-	storageBucket = flag.String("storage_bucket", "sre-classroom-image-server_photos", "storage bucket to use for storing photos")
+	s3AccessKey   = flag.String("s3_access_key", "", "access key for the s3-compatible endpoint")
+	s3Bucket      = flag.String("s3_bucket", "photos", "bucket name to use on the s3-compatible endpoint")
+	s3Endpoint    = flag.String("s3_endpoint", "localhost:9000", "s3-compatible endpoint (host:port) to use for storing photos when storage_bucket is empty")
+	s3SecretKey   = flag.String("s3_secret_key", "", "secret key for the s3-compatible endpoint")
+	s3UseSSL      = flag.Bool("s3_use_ssl", false, "use TLS when connecting to the s3-compatible endpoint")
+	storageBucket = flag.String("storage_bucket", "", "GCS storage bucket to use for storing photos; if empty, S3 storage is used instead")
 	storageDryRun = flag.Bool("storage_dry_run", false, "disable storage bucket reads")
 )
 
 // DownloadPhotoServer implements the DownloadPhoto GRPC service.
-type DownloadPhotoServer struct{}
+type DownloadPhotoServer struct {
+	newBlobs blobstore.New
+}
 
 // Download method returns the requested photo blob from storage.
 func (s *DownloadPhotoServer) Download(ctx context.Context, request *pb.DownloadPhotoRequest) (*pb.DownloadPhotoResponse, error) {
@@ -42,30 +50,20 @@ func (s *DownloadPhotoServer) Download(ctx context.Context, request *pb.Download
 		return &pb.DownloadPhotoResponse{ImgBlob: []byte{}}, nil
 	}
 
-	client, err := storage.NewClient(ctx)
+	blobs, err := s.newBlobs(ctx)
 	if err != nil {
-		glog.Errorf("storage client failed: %v", err)
+		glog.Errorf("blob store failed: %v", err)
+		return nil, err
+	}
+	defer blobs.Close()
+
+	img, err := blobs.Read(ctx, request.ImgName)
+	if err != nil {
+		glog.Errorf("blob read failed for %s: %v", request.ImgName, err)
 		return nil, err
 	}
 
-	bucket := client.Bucket(*storageBucket)
-	blob := bucket.Object(request.ImgName)
-
-	r, err := blob.NewReader(ctx)
-	if err != nil {
-		glog.Errorf("storage reader failed for %s: %v", request.ImgName, err)
-		return nil, err
-	}
-	defer r.Close()
-
-	var b bytes.Buffer
-	_, err = b.ReadFrom(r)
-	if err != nil {
-		glog.Errorf("storage reading failed for %s: %v", request.ImgName, err)
-		return nil, err
-	}
-
-	return &pb.DownloadPhotoResponse{ImgBlob: b.Bytes()}, nil
+	return &pb.DownloadPhotoResponse{ImgBlob: img}, nil
 }
 
 func main() {
@@ -76,8 +74,17 @@ func main() {
 		glog.Fatalf("failed to listen on %s: %v", *listenPort, err)
 	}
 
+	var newBlobs blobstore.New
+	if *storageBucket != "" {
+		newBlobs = gcs.New(*storageBucket)
+	} else {
+		newBlobs = s3.New(*s3Endpoint, *s3Bucket, *s3AccessKey, *s3SecretKey, *s3UseSSL)
+	}
+
+	server := &DownloadPhotoServer{newBlobs: newBlobs}
+
 	grpcServer := grpc.NewServer()
-	pb.RegisterDownloadPhotoServer(grpcServer, &DownloadPhotoServer{})
+	pb.RegisterDownloadPhotoServer(grpcServer, server)
 
 	glog.Infof("starting GRPC server on %s", *listenPort)
 	if err := grpcServer.Serve(listener); err != nil {

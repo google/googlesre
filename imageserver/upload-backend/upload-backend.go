@@ -33,6 +33,7 @@ import (
 
 	"app/blobstore"
 	"app/blobstore/gcs"
+	"app/blobstore/s3"
 	"app/metadatastore"
 	"app/metadatastore/firestoredb"
 	"app/metadatastore/redisdb"
@@ -51,7 +52,12 @@ var (
 	firestoreDryRun       = flag.Bool("firestore_dry_run", false, "disable firestore writes")
 	listenPort            = flag.String("listen_port", ":8080", "start server on this port")
 	redisAddr             = flag.String("redis_addr", "localhost:6379", "redis address to use for storing tags when firestore_project is empty")
-	storageBucket         = flag.String("storage_bucket", "sre-classroom-image-server_photos", "storage bucket to use for storing photos")
+	s3AccessKey           = flag.String("s3_access_key", "", "access key for the s3-compatible endpoint")
+	s3Bucket              = flag.String("s3_bucket", "photos", "bucket name to use on the s3-compatible endpoint")
+	s3Endpoint            = flag.String("s3_endpoint", "localhost:9000", "s3-compatible endpoint (host:port) to use for storing photos when storage_bucket is empty")
+	s3SecretKey           = flag.String("s3_secret_key", "", "secret key for the s3-compatible endpoint")
+	s3UseSSL              = flag.Bool("s3_use_ssl", false, "use TLS when connecting to the s3-compatible endpoint")
+	storageBucket         = flag.String("storage_bucket", "", "GCS storage bucket to use for storing photos; if empty, S3 stoarge is used instead")
 	storageDryRun         = flag.Bool("storage_dry_run", false, "disable storage bucket writes")
 	thumbnailHeight       = flag.Uint("thumbnail_height", 180, "height of the generated photo thumbnail")
 	thumbnailPrefix       = flag.String("thumbnail_prefix", "thumbnail_", "name prefix to use for storing thumbnails")
@@ -281,6 +287,13 @@ func main() {
 		glog.Fatalf("failed to listen on %s: %v", *listenPort, err)
 	}
 
+	var newBlobs blobstore.New
+	if *storageBucket != "" {
+		newBlobs = gcs.New(*storageBucket)
+	} else {
+		newBlobs = s3.New(*s3Endpoint, *s3Bucket, *s3AccessKey, *s3SecretKey, *s3UseSSL)
+	}
+
 	var newMeta metadatastore.New
 	if *firestoreProject != "" {
 		newMeta = firestoredb.New(*firestoreProject)
@@ -289,7 +302,7 @@ func main() {
 	}
 
 	server := &UploadPhotoServer{
-		newBlobs: gcs.New(*storageBucket),
+		newBlobs: newBlobs,
 		newMeta:  newMeta,
 	}
 

@@ -22,6 +22,7 @@ import (
 
 	"app/blobstore"
 	"app/blobstore/gcs"
+	"app/blobstore/s3"
 	pb "app/protos"
 	"github.com/golang/glog"
 	"google.golang.org/grpc"
@@ -29,7 +30,12 @@ import (
 
 var (
 	listenPort    = flag.String("listen_port", ":8080", "start server on this port")
-	storageBucket = flag.String("storage_bucket", "sre-classroom-image-server_photos", "storage bucket to use for storing photos")
+	s3AccessKey   = flag.String("s3_access_key", "", "access key for the s3-compatible endpoint")
+	s3Bucket      = flag.String("s3_bucket", "photos", "bucket name to use on the s3-compatible endpoint")
+	s3Endpoint    = flag.String("s3_endpoint", "localhost:9000", "s3-compatible endpoint (host:port) to use for storing photos when storage_bucket is empty")
+	s3SecretKey   = flag.String("s3_secret_key", "", "secret key for the s3-compatible endpoint")
+	s3UseSSL      = flag.Bool("s3_use_ssl", false, "use TLS when connecting to the s3-compatible endpoint")
+	storageBucket = flag.String("storage_bucket", "", "GCS storage bucket to use for storing photos; if empty, S3 storage is used instead")
 	storageDryRun = flag.Bool("storage_dry_run", false, "disable storage bucket reads")
 )
 
@@ -68,7 +74,14 @@ func main() {
 		glog.Fatalf("failed to listen on %s: %v", *listenPort, err)
 	}
 
-	server := &DownloadPhotoServer{newBlobs: gcs.New(*storageBucket)}
+	var newBlobs blobstore.New
+	if *storageBucket != "" {
+		newBlobs = gcs.New(*storageBucket)
+	} else {
+		newBlobs = s3.New(*s3Endpoint, *s3Bucket, *s3AccessKey, *s3SecretKey, *s3UseSSL)
+	}
+
+	server := &DownloadPhotoServer{newBlobs: newBlobs}
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterDownloadPhotoServer(grpcServer, server)

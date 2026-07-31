@@ -28,6 +28,7 @@ import (
 	"math/rand"
 	"net"
 	"path"
+	"regexp"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -38,6 +39,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/nfnt/resize"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var (
@@ -52,6 +55,10 @@ var (
 	thumbnailPrefix       = flag.String("thumbnail_prefix", "thumbnail_", "name prefix to use for storing thumbnails")
 	thumbnailWidth        = flag.Uint("thumbnail_width", 320, "width of the generated photo thumbnail")
 	latestIdxFirestore    = rand.Uint32()
+
+	// validNameRe constrains user names and hashtags to a safe Firestore
+	// collection-id charset, preventing path traversal into other collections.
+	validNameRe = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,64}$`)
 )
 
 // hashtagPrefix namespaces hashtag-index collections so that /search cannot
@@ -179,6 +186,15 @@ func makeThumbnail(photo []byte, width, height uint) ([]byte, error) {
 
 // CreateMetadata method stores image user and tags into Firestore.
 func (s *UploadPhotoServer) CreateMetadata(ctx context.Context, request *pb.CreateMetadataRequest) (*pb.CreateMetadataResponse, error) {
+	if !validNameRe.MatchString(request.User) || request.User == *firestoreLatestPath {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid user %q", request.User)
+	}
+	for _, tag := range request.Hashtags {
+		if !validNameRe.MatchString(tag) || tag == *firestoreLatestPath {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid hashtag %q", tag)
+		}
+	}
+
 	if *firestoreDryRun {
 		return &pb.CreateMetadataResponse{}, nil
 	}

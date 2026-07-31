@@ -16,13 +16,13 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"flag"
 	"net"
 
+	"app/blobstore"
+	"app/blobstore/gcs"
 	pb "app/protos"
-	"cloud.google.com/go/storage"
 	"github.com/golang/glog"
 	"google.golang.org/grpc"
 )
@@ -34,7 +34,9 @@ var (
 )
 
 // DownloadPhotoServer implements the DownloadPhoto GRPC service.
-type DownloadPhotoServer struct{}
+type DownloadPhotoServer struct {
+	newBlobs blobstore.New
+}
 
 // Download method returns the requested photo blob from storage.
 func (s *DownloadPhotoServer) Download(ctx context.Context, request *pb.DownloadPhotoRequest) (*pb.DownloadPhotoResponse, error) {
@@ -42,30 +44,20 @@ func (s *DownloadPhotoServer) Download(ctx context.Context, request *pb.Download
 		return &pb.DownloadPhotoResponse{ImgBlob: []byte{}}, nil
 	}
 
-	client, err := storage.NewClient(ctx)
+	blobs, err := s.newBlobs(ctx)
 	if err != nil {
-		glog.Errorf("storage client failed: %v", err)
+		glog.Errorf("blob store failed: %v", err)
+		return nil, err
+	}
+	defer blobs.Close()
+
+	img, err := blobs.Read(ctx, request.ImgName)
+	if err != nil {
+		glog.Errorf("blob read failed for %s: %v", request.ImgName, err)
 		return nil, err
 	}
 
-	bucket := client.Bucket(*storageBucket)
-	blob := bucket.Object(request.ImgName)
-
-	r, err := blob.NewReader(ctx)
-	if err != nil {
-		glog.Errorf("storage reader failed for %s: %v", request.ImgName, err)
-		return nil, err
-	}
-	defer r.Close()
-
-	var b bytes.Buffer
-	_, err = b.ReadFrom(r)
-	if err != nil {
-		glog.Errorf("storage reading failed for %s: %v", request.ImgName, err)
-		return nil, err
-	}
-
-	return &pb.DownloadPhotoResponse{ImgBlob: b.Bytes()}, nil
+	return &pb.DownloadPhotoResponse{ImgBlob: img}, nil
 }
 
 func main() {
@@ -76,8 +68,10 @@ func main() {
 		glog.Fatalf("failed to listen on %s: %v", *listenPort, err)
 	}
 
+	server := &DownloadPhotoServer{newBlobs: gcs.New(*storageBucket)}
+
 	grpcServer := grpc.NewServer()
-	pb.RegisterDownloadPhotoServer(grpcServer, &DownloadPhotoServer{})
+	pb.RegisterDownloadPhotoServer(grpcServer, server)
 
 	glog.Infof("starting GRPC server on %s", *listenPort)
 	if err := grpcServer.Serve(listener); err != nil {

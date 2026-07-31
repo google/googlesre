@@ -24,18 +24,18 @@ import (
 	"image/gif"
 	"image/jpeg"
 	"image/png"
-	"io"
 	"math/rand"
 	"net"
-	"path"
 	"regexp"
 	"strconv"
 	"sync/atomic"
 	"time"
 
+	"app/blobstore"
+	"app/blobstore/gcs"
+	"app/metadatastore"
+	"app/metadatastore/firestoredb"
 	pb "app/protos"
-	"cloud.google.com/go/firestore"
-	"cloud.google.com/go/storage"
 	"github.com/golang/glog"
 	"github.com/nfnt/resize"
 	"google.golang.org/grpc"
@@ -67,7 +67,10 @@ var (
 const hashtagPrefix = "tag:"
 
 // UploadPhotoServer implements the UploadPhoto GRPC service.
-type UploadPhotoServer struct{}
+type UploadPhotoServer struct {
+	newBlobs blobstore.New
+	newMeta  metadatastore.New
+}
 
 // Upload method stores the photo and generated thumbnail to blob storage.
 func (s *UploadPhotoServer) Upload(ctx context.Context, request *pb.UploadPhotoRequest) (*pb.UploadPhotoResponse, error) {
@@ -82,23 +85,22 @@ func (s *UploadPhotoServer) Upload(ctx context.Context, request *pb.UploadPhotoR
 	}
 
 	start := time.Now()
-	client, err := storage.NewClient(ctx)
+	blobs, err := s.newBlobs(ctx)
 	if err != nil {
-		glog.Errorf("storage client failed: %v", err)
+		glog.Errorf("blob store failed: %v", err)
 		return nil, err
 	}
-	defer client.Close()
+	defer blobs.Close()
 	delta := time.Since(start)
 	if delta > 150*time.Millisecond {
 		glog.Error("storage client took: ", delta)
 	}
 
-	bucket := client.Bucket(*storageBucket)
 	errors := make(chan error)
 
 	go func() {
 		start := time.Now()
-		err = writeBlob(ctx, bucket, request.ObjName, request.Image)
+		err := blobs.Write(ctx, request.ObjName, request.Image)
 		if err != nil {
 			err = fmt.Errorf("photo write failed: %v", err)
 		}
@@ -111,7 +113,7 @@ func (s *UploadPhotoServer) Upload(ctx context.Context, request *pb.UploadPhotoR
 
 	go func() {
 		start := time.Now()
-		err = writeBlob(ctx, bucket, *thumbnailPrefix+request.ObjName, thumb)
+		err := blobs.Write(ctx, *thumbnailPrefix+request.ObjName, thumb)
 		if err != nil {
 			err = fmt.Errorf("thumbnail write failed: %v", err)
 		}
@@ -124,7 +126,7 @@ func (s *UploadPhotoServer) Upload(ctx context.Context, request *pb.UploadPhotoR
 
 	var failure error
 	for i := 0; i < 2; i++ {
-		err = <-errors
+		err := <-errors
 		if err != nil {
 			glog.Error(err)
 			if failure == nil {
@@ -138,24 +140,6 @@ func (s *UploadPhotoServer) Upload(ctx context.Context, request *pb.UploadPhotoR
 	} else {
 		return &pb.UploadPhotoResponse{}, nil
 	}
-}
-
-func writeBlob(ctx context.Context, bucket *storage.BucketHandle, name string, data []byte) error {
-	obj := bucket.Object(name)
-	w := obj.NewWriter(ctx)
-	r := bytes.NewReader(data)
-
-	_, err := io.Copy(w, r)
-	if err != nil {
-		return fmt.Errorf("storage copy failed: %v", err)
-	}
-
-	err = w.Close()
-	if err != nil {
-		return fmt.Errorf("storage close failed: %v", err)
-	}
-
-	return nil
 }
 
 func makeThumbnail(photo []byte, width, height uint) ([]byte, error) {
@@ -184,7 +168,7 @@ func makeThumbnail(photo []byte, width, height uint) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-// CreateMetadata method stores image user and tags into Firestore.
+// CreateMetadata method stores image user and tags into the metadata store.
 func (s *UploadPhotoServer) CreateMetadata(ctx context.Context, request *pb.CreateMetadataRequest) (*pb.CreateMetadataResponse, error) {
 	if !validNameRe.MatchString(request.User) || request.User == *firestoreLatestPath {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid user %q", request.User)
@@ -200,12 +184,12 @@ func (s *UploadPhotoServer) CreateMetadata(ctx context.Context, request *pb.Crea
 	}
 
 	start := time.Now()
-	client, err := firestore.NewClient(ctx, *firestoreProject)
+	meta, err := s.newMeta(ctx)
 	if err != nil {
-		glog.Errorf("firestore client failed: %v", err)
+		glog.Errorf("metadata store failed: %v", err)
 		return nil, err
 	}
-	defer client.Close()
+	defer meta.Close()
 	delta := time.Since(start)
 	if delta > 150*time.Millisecond {
 		glog.Error("firestore client took: ", delta)
@@ -217,12 +201,11 @@ func (s *UploadPhotoServer) CreateMetadata(ctx context.Context, request *pb.Crea
 	// Store photo name under user.
 	go func() {
 		start := time.Now()
-		id := path.Join(request.User, request.ObjName)
-		_, err := client.Doc(id).Set(ctx, map[string]interface{}{
+		err := meta.Put(ctx, request.User, request.ObjName, map[string]interface{}{
 			"uploaded_time": timestamp,
 		})
 		if err != nil {
-			err = fmt.Errorf("firestore create failed for %s: %v", id, err)
+			err = fmt.Errorf("metadata create failed for %s/%s: %v", request.User, request.ObjName, err)
 		}
 		delta := time.Since(start)
 		if delta > 150*time.Millisecond {
@@ -236,13 +219,12 @@ func (s *UploadPhotoServer) CreateMetadata(ctx context.Context, request *pb.Crea
 		var err error
 		start := time.Now()
 		for _, tag := range request.Hashtags {
-			id := path.Join(hashtagPrefix+tag, request.ObjName)
-			_, err = client.Doc(id).Set(ctx, map[string]interface{}{
+			err = meta.Put(ctx, hashtagPrefix+tag, request.ObjName, map[string]interface{}{
 				"uploaded_time": timestamp,
 				"user":          request.User,
 			})
 			if err != nil {
-				err = fmt.Errorf("firestore create failed for %s: %v", id, err)
+				err = fmt.Errorf("metadata create failed for %s/%s: %v", tag, request.ObjName, err)
 				break
 			}
 		}
@@ -256,13 +238,13 @@ func (s *UploadPhotoServer) CreateMetadata(ctx context.Context, request *pb.Crea
 	// Store photo name under latest.
 	go func() {
 		index := atomic.AddUint32(&latestIdxFirestore, 1) % uint32(*firestoreLatestPhotos)
-		id := path.Join(*firestoreLatestPath, strconv.Itoa(int(index)))
+		id := strconv.Itoa(int(index))
 		start := time.Now()
-		_, err := client.Doc(id).Set(ctx, map[string]interface{}{
+		err := meta.Put(ctx, *firestoreLatestPath, id, map[string]interface{}{
 			"obj_name": request.ObjName,
 		})
 		if err != nil {
-			err = fmt.Errorf("firestore create failed for %s: %v", id, err)
+			err = fmt.Errorf("metadata create failed for %s/%s: %v", *firestoreLatestPath, id, err)
 		}
 		delta := time.Since(start)
 		if delta > 150*time.Millisecond {
@@ -273,7 +255,7 @@ func (s *UploadPhotoServer) CreateMetadata(ctx context.Context, request *pb.Crea
 
 	var failure error
 	for i := 0; i < 3; i++ {
-		err = <-errors
+		err := <-errors
 		if err != nil {
 			glog.Error(err)
 			if failure == nil {
@@ -297,8 +279,13 @@ func main() {
 		glog.Fatalf("failed to listen on %s: %v", *listenPort, err)
 	}
 
+	server := &UploadPhotoServer{
+		newBlobs: gcs.New(*storageBucket),
+		newMeta:  firestoredb.New(*firestoreProject),
+	}
+
 	grpcServer := grpc.NewServer()
-	pb.RegisterUploadPhotoServer(grpcServer, &UploadPhotoServer{})
+	pb.RegisterUploadPhotoServer(grpcServer, server)
 
 	glog.Infof("starting GRPC server on %s", *listenPort)
 	if err := grpcServer.Serve(listener); err != nil {

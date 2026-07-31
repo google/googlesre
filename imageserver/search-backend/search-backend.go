@@ -21,10 +21,10 @@ import (
 	"net"
 	"regexp"
 
+	"app/metadatastore"
+	"app/metadatastore/firestoredb"
 	pb "app/protos"
-	"cloud.google.com/go/firestore"
 	"github.com/golang/glog"
-	"google.golang.org/api/iterator"
 	"google.golang.org/grpc"
 )
 
@@ -45,7 +45,9 @@ const hashtagPrefix = "tag:"
 var keywordRE = regexp.MustCompile(`^[a-zA-Z0-9_-]{0,64}$`)
 
 // GetThumbnailServer implements the GetThumbnail GRPC service.
-type GetThumbnailServer struct{}
+type GetThumbnailServer struct {
+	newMeta metadatastore.New
+}
 
 // GetThumbnail method returns the thumbnails for requested keyword.
 func (s *GetThumbnailServer) GetThumbnail(ctx context.Context, request *pb.GetThumbnailImagesRequest) (*pb.GetThumbnailImagesResponse, error) {
@@ -60,68 +62,47 @@ func (s *GetThumbnailServer) GetThumbnail(ctx context.Context, request *pb.GetTh
 		return &pb.GetThumbnailImagesResponse{StorageUrl: urls}, nil
 	}
 
-	client, err := firestore.NewClient(ctx, *firestoreProject)
+	meta, err := s.newMeta(ctx)
 	if err != nil {
-		glog.Errorf("firestore client failed: %v", err)
+		glog.Errorf("metadata store failed: %v", err)
 		return nil, err
 	}
-	defer client.Close()
+	defer meta.Close()
 
+	var collection string
 	var f getFunc
-	var q *firestore.CollectionRef
 	if request.SearchKeyword == "" {
-		q = client.Collection(*firestoreLatest)
+		collection = *firestoreLatest
 		f = getData
 	} else {
-		q = client.Collection(hashtagPrefix + request.SearchKeyword)
+		collection = hashtagPrefix + request.SearchKeyword
 		f = getID
 	}
 
-	if q != nil {
-		iter := q.Documents(ctx)
-		defer iter.Stop()
+	items, err := meta.List(ctx, collection, *thumbnailCount)
+	if err != nil {
+		glog.Errorf("metadata list failed: %v", err)
+		return nil, err
+	}
 
-		urls, err = getThumbnails(iter, f)
-		if err != nil {
-			glog.Errorf("firestore iterator failed: %v", err)
-			return nil, err
-		}
+	for _, item := range items {
+		urls = append(urls, *thumbnailPrefix+f(item))
 	}
 
 	return &pb.GetThumbnailImagesResponse{StorageUrl: urls}, nil
 }
 
-// getThumbnails function returns a list of thumbnail urls from query iterator.
-func getThumbnails(iter *firestore.DocumentIterator, f getFunc) ([]string, error) {
-	var urls []string
+// getFunc type represents a function mapping from an item to a thumbnail name.
+type getFunc func(item metadatastore.Item) string
 
-	for i := 0; i < *thumbnailCount; i++ {
-		doc, err := iter.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		urls = append(urls, *thumbnailPrefix+f(doc))
-	}
-
-	return urls, nil
+// getData reads the thumbnail name from the item contents.
+func getData(item metadatastore.Item) string {
+	return item.Data["obj_name"].(string)
 }
 
-// getFunc type represents a function mapping from a document to a thumbnail name.
-type getFunc func(doc *firestore.DocumentSnapshot) string
-
-// getData reads the thumbnail name from document contents.
-func getData(doc *firestore.DocumentSnapshot) string {
-	data := doc.Data()
-	return data["obj_name"].(string)
-}
-
-// getID reads the thumbnail name from document identifier.
-func getID(doc *firestore.DocumentSnapshot) string {
-	return doc.Ref.ID
+// getID reads the thumbnail name from the item identifier.
+func getID(item metadatastore.Item) string {
+	return item.ID
 }
 
 func main() {
@@ -132,8 +113,10 @@ func main() {
 		glog.Fatalf("failed to listen on %s: %v", *listenPort, err)
 	}
 
+	server := &GetThumbnailServer{newMeta: firestoredb.New(*firestoreProject)}
+
 	grpcServer := grpc.NewServer()
-	pb.RegisterGetThumbnailServer(grpcServer, &GetThumbnailServer{})
+	pb.RegisterGetThumbnailServer(grpcServer, server)
 
 	glog.Infof("starting GRPC server on %s", *listenPort)
 	if err := grpcServer.Serve(listener); err != nil {

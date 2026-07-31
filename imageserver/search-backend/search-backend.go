@@ -19,6 +19,7 @@ import (
 	"context"
 	"flag"
 	"net"
+	"regexp"
 
 	pb "app/protos"
 	"cloud.google.com/go/firestore"
@@ -36,12 +37,24 @@ var (
 	thumbnailPrefix  = flag.String("thumbnail_prefix", "/download/thumbnail_", "URL prefix for returned thumbnails")
 )
 
+// hashtagPrefix namespaces hashtag-index collections so that /search cannot
+// be used to enumerate unrelated top-level collections (per-user indexes,
+// "latest", etc.). Must match the prefix used by upload-backend.
+const hashtagPrefix = "tag:"
+
+var keywordRE = regexp.MustCompile(`^[a-zA-Z0-9_-]{0,64}$`)
+
 // GetThumbnailServer implements the GetThumbnail GRPC service.
 type GetThumbnailServer struct{}
 
 // GetThumbnail method returns the thumbnails for requested keyword.
 func (s *GetThumbnailServer) GetThumbnail(ctx context.Context, request *pb.GetThumbnailImagesRequest) (*pb.GetThumbnailImagesResponse, error) {
 	var urls []string
+
+	if !keywordRE.MatchString(request.SearchKeyword) {
+		glog.Errorf("rejecting invalid search keyword: %q", request.SearchKeyword)
+		return &pb.GetThumbnailImagesResponse{StorageUrl: urls}, nil
+	}
 
 	if *firestoreDryRun {
 		return &pb.GetThumbnailImagesResponse{StorageUrl: urls}, nil
@@ -60,7 +73,7 @@ func (s *GetThumbnailServer) GetThumbnail(ctx context.Context, request *pb.GetTh
 		q = client.Collection(*firestoreLatest)
 		f = getData
 	} else {
-		q = client.Collection(request.SearchKeyword)
+		q = client.Collection(hashtagPrefix + request.SearchKeyword)
 		f = getID
 	}
 

@@ -54,6 +54,11 @@ var (
 	latestIdxFirestore    = rand.Uint32()
 )
 
+// hashtagPrefix namespaces hashtag-index collections so that /search cannot
+// be used to enumerate unrelated top-level collections (per-user indexes,
+// "latest", etc.). Must match the prefix used by search-backend.
+const hashtagPrefix = "tag:"
+
 // UploadPhotoServer implements the UploadPhoto GRPC service.
 type UploadPhotoServer struct{}
 
@@ -215,7 +220,7 @@ func (s *UploadPhotoServer) CreateMetadata(ctx context.Context, request *pb.Crea
 		var err error
 		start := time.Now()
 		for _, tag := range request.Hashtags {
-			id := path.Join(tag, request.ObjName)
+			id := path.Join(hashtagPrefix+tag, request.ObjName)
 			_, err = client.Doc(id).Set(ctx, map[string]interface{}{
 				"uploaded_time": timestamp,
 				"user":          request.User,

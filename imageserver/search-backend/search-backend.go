@@ -23,6 +23,7 @@ import (
 
 	"app/metadatastore"
 	"app/metadatastore/firestoredb"
+	"app/metadatastore/redisdb"
 	pb "app/protos"
 	"github.com/golang/glog"
 	"google.golang.org/grpc"
@@ -30,9 +31,10 @@ import (
 
 var (
 	firestoreLatest  = flag.String("firestore_latest", "latest", "firestore collection storing latest photos")
-	firestoreProject = flag.String("firestore_project", "sre-classroom-image-server", "firestore project to use for storing tags")
+	firestoreProject = flag.String("firestore_project", "", "firestore project to use for storing tags; if empty, redis_addr is used instead")
 	firestoreDryRun  = flag.Bool("firestore_dry_run", false, "disable firestore reads")
 	listenPort       = flag.String("listen_port", ":8080", "start server on this port")
+	redisAddr        = flag.String("redis_addr", "localhost:6379", "redis address to use for storing tags when firestore_project is empty")
 	thumbnailCount   = flag.Int("thumbnail_count", 10, "number of thumbnails to return")
 	thumbnailPrefix  = flag.String("thumbnail_prefix", "/download/thumbnail_", "URL prefix for returned thumbnails")
 )
@@ -113,7 +115,14 @@ func main() {
 		glog.Fatalf("failed to listen on %s: %v", *listenPort, err)
 	}
 
-	server := &GetThumbnailServer{newMeta: firestoredb.New(*firestoreProject)}
+	var newMeta metadatastore.New
+	if *firestoreProject != "" {
+		newMeta = firestoredb.New(*firestoreProject)
+	} else {
+		newMeta = redisdb.New(*redisAddr)
+	}
+
+	server := &GetThumbnailServer{newMeta: newMeta}
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterGetThumbnailServer(grpcServer, server)

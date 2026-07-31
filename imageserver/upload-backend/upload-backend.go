@@ -35,6 +35,7 @@ import (
 	"app/blobstore/gcs"
 	"app/metadatastore"
 	"app/metadatastore/firestoredb"
+	"app/metadatastore/redisdb"
 	pb "app/protos"
 	"github.com/golang/glog"
 	"github.com/nfnt/resize"
@@ -46,9 +47,10 @@ import (
 var (
 	firestoreLatestPath   = flag.String("firestore_latest_path", "latest", "path for storing latest images")
 	firestoreLatestPhotos = flag.Uint("firestore_latest_photos", 10, "number of latest images to store")
-	firestoreProject      = flag.String("firestore_project", "sre-classroom-image-server", "firestore project to use for storing tags")
+	firestoreProject      = flag.String("firestore_project", "", "firestore project to use for storing tags; if empty, redis_addr is used instead")
 	firestoreDryRun       = flag.Bool("firestore_dry_run", false, "disable firestore writes")
 	listenPort            = flag.String("listen_port", ":8080", "start server on this port")
+	redisAddr             = flag.String("redis_addr", "localhost:6379", "redis address to use for storing tags when firestore_project is empty")
 	storageBucket         = flag.String("storage_bucket", "sre-classroom-image-server_photos", "storage bucket to use for storing photos")
 	storageDryRun         = flag.Bool("storage_dry_run", false, "disable storage bucket writes")
 	thumbnailHeight       = flag.Uint("thumbnail_height", 180, "height of the generated photo thumbnail")
@@ -279,9 +281,16 @@ func main() {
 		glog.Fatalf("failed to listen on %s: %v", *listenPort, err)
 	}
 
+	var newMeta metadatastore.New
+	if *firestoreProject != "" {
+		newMeta = firestoredb.New(*firestoreProject)
+	} else {
+		newMeta = redisdb.New(*redisAddr)
+	}
+
 	server := &UploadPhotoServer{
 		newBlobs: gcs.New(*storageBucket),
-		newMeta:  firestoredb.New(*firestoreProject),
+		newMeta:  newMeta,
 	}
 
 	grpcServer := grpc.NewServer()

@@ -43,12 +43,8 @@ steps:
 
 1. Open the [GCP dashboard](https://console.cloud.google.com/)
 1. Create a new GCP project
-1. Create a new [source
-   repository](https://cloud.google.com/source-repositories) inside the GCP
-   project
-1. Import the Image Server code into the source repository
 1. Start a [Cloud Shell](https://cloud.google.com/shell) for the GCP project
-1. In the Cloud Shell clone the source repository
+1. In the Cloud Shell git clone [this repository](https://github.com/google/googlesre)
 1. In the Cloud Shell run the `deploy.sh` script
 1. Access the web application after the Ingress IP address becomes available
 

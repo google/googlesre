@@ -1,7 +1,8 @@
 FROM docker.io/library/node:22
 WORKDIR /app
-COPY ui-frontend .
+COPY ui-frontend/package.json ui-frontend/package-lock.json ./
 RUN npm ci
+COPY ui-frontend .
 RUN npm run ng build -- --configuration production
 
 FROM docker.io/library/nginx

@@ -5,6 +5,6 @@ RUN npm ci
 COPY ui-frontend .
 RUN npm run ng build -- --configuration production
 
-FROM docker.io/library/nginx
+FROM docker.io/library/nginx:stable
 WORKDIR /usr/share/nginx/html
 COPY --from=0 /app/dist/ui-frontend .

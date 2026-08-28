@@ -22,12 +22,12 @@
         <p>Add new hashtag for the image: </p>
       <div>
         <mat-form-field>
-          <mat-chip-list #chipList>
-            <mat-chip *ngFor="let chip of chips" [removable]="true" [selectable]="false" (removed)="removeChip(chip)">
+          <mat-chip-grid #chipList>
+            <mat-chip-row *ngFor="let chip of chips" (removed)="removeChip(chip)">
               {{ chip }}
       <ace-icon matChipRemove icon="cancel"></ace-icon>
-            </mat-chip>
-          </mat-chip-list>
+            </mat-chip-row>
+          </mat-chip-grid>
           <input
             [matChipInputFor]="chipList"
             [matChipInputAddOnBlur]="true"

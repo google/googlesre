@@ -15,12 +15,13 @@
  */
 
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import {Component} from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 
 @Component({
     selector: 'app-download',
     templateUrl: './download.ng.html',
     styleUrls: ['./download.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class Download {

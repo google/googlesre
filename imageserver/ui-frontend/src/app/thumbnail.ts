@@ -15,7 +15,7 @@
  */
 
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import {Component, OnChanges, OnInit} from '@angular/core';
+import {Component, OnChanges, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {UntypedFormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {MatButtonModule} from '@angular/material/button';
 import {MatChipInputEvent, MatChipsModule} from '@angular/material/chips';
@@ -33,6 +33,7 @@ import {User} from './user.model';
     templateUrl: './thumbnail.ng.html',
     styleUrls: ['./thumbnail.scss'],
     providers: [Download],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class Thumbnail implements OnInit {
@@ -95,6 +96,7 @@ export class Thumbnail implements OnInit {
     selector: 'upload-form',
     templateUrl: 'upload-form.html',
     styleUrls: ['./upload-form.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class UploadForm {

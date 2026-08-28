@@ -16,7 +16,7 @@
 
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
-import {HttpClientModule} from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatButtonModule} from '@angular/material/button';
 import {MatChipsModule} from '@angular/material/chips';
@@ -34,8 +34,7 @@ import { Login } from './login';
 import { Navbar } from './navbar';
 import { Thumbnail, UploadForm } from './thumbnail';
 
-@NgModule({
-    declarations: [
+@NgModule({ declarations: [
         AppComponent,
         Thumbnail,
         UploadForm,
@@ -43,8 +42,7 @@ import { Thumbnail, UploadForm } from './thumbnail';
         Login,
         Download
     ],
-    imports: [
-        MatChipsModule,
+    bootstrap: [AppComponent], imports: [MatChipsModule,
         BrowserAnimationsModule,
         AppRoutingModule,
         MatDialogModule,
@@ -52,13 +50,9 @@ import { Thumbnail, UploadForm } from './thumbnail';
         ReactiveFormsModule,
         FormsModule,
         MatButtonModule,
-        MatFormFieldModule,
-        HttpClientModule,
-    ],
-    providers: [
+        MatFormFieldModule], providers: [
         AuthGuard,
-        AuthService
-    ],
-    bootstrap: [AppComponent]
-})
+        AuthService,
+        provideHttpClient(withInterceptorsFromDi())
+    ] })
 export class AppModule { }

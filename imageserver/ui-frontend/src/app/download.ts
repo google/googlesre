@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {HttpClient, HttpHeaders} from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import {Component} from '@angular/core';
 
 @Component({

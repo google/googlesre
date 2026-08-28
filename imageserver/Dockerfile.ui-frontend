@@ -1,4 +1,4 @@
-FROM docker.io/library/node:18
+FROM docker.io/library/node:22
 WORKDIR /app
 COPY ui-frontend .
 RUN npm ci

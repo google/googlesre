@@ -22,9 +22,10 @@ import {AuthService} from './authservice';
 import {User} from './user.model';
 
 @Component({
-  selector: 'app-navbar',
-  templateUrl: './navbar.ng.html',
-  styleUrls: ['./navbar.scss']
+    selector: 'app-navbar',
+    templateUrl: './navbar.ng.html',
+    styleUrls: ['./navbar.scss'],
+    standalone: false
 })
 export class Navbar {
   title: string;

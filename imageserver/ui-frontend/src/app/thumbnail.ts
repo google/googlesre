@@ -29,10 +29,11 @@ import {Download} from './download';
 import {User} from './user.model';
 
 @Component({
-  selector: 'app-thumbnail',
-  templateUrl: './thumbnail.ng.html',
-  styleUrls: ['./thumbnail.scss'],
-  providers: [Download],
+    selector: 'app-thumbnail',
+    templateUrl: './thumbnail.ng.html',
+    styleUrls: ['./thumbnail.scss'],
+    providers: [Download],
+    standalone: false
 })
 export class Thumbnail implements OnInit {
   // search keyword
@@ -91,9 +92,10 @@ export class Thumbnail implements OnInit {
 }
 
 @Component({
-  selector: 'upload-form',
-  templateUrl: 'upload-form.html',
-  styleUrls: ['./upload-form.scss']
+    selector: 'upload-form',
+    templateUrl: 'upload-form.html',
+    styleUrls: ['./upload-form.scss'],
+    standalone: false
 })
 export class UploadForm {
   // hashtags

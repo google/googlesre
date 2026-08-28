@@ -18,9 +18,10 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import {Component} from '@angular/core';
 
 @Component({
-  selector: 'app-download',
-  templateUrl: './download.ng.html',
-  styleUrls: ['./download.scss']
+    selector: 'app-download',
+    templateUrl: './download.ng.html',
+    styleUrls: ['./download.scss'],
+    standalone: false
 })
 export class Download {
   imgToDownload: string|null = null;

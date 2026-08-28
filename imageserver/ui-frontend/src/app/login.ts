@@ -19,9 +19,10 @@ import {Router} from '@angular/router';
 import {AuthService} from './authservice';
 
 @Component({
-  selector: 'app-login',
-  templateUrl: './login.ng.html',
-  styleUrls: ['./login.scss']
+    selector: 'app-login',
+    templateUrl: './login.ng.html',
+    styleUrls: ['./login.scss'],
+    standalone: false
 })
 export class Login {
   constructor(private auth: AuthService, private router: Router) {}

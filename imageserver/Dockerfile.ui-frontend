@@ -1,4 +1,4 @@
-FROM docker.io/library/node:22
+FROM docker.io/library/node:24
 WORKDIR /app
 COPY ui-frontend/package.json ui-frontend/package-lock.json ./
 RUN npm ci

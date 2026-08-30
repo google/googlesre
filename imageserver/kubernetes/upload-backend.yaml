@@ -38,7 +38,7 @@ spec:
         - image: gcr.io/sre-classroom-image-server/upload-backend
           imagePullPolicy: IfNotPresent
           name: upload-backend-1
-          args: ["-storage_bucket", "BUCKET_NAME", "-firestore_project", "FIRESTORE_PROJECT"]
+          args: ["-storage_bucket", "BUCKET_NAME", "-firestore_project", "FIRESTORE_PROJECT", "-firestore_database", "FIRESTORE_DATABASE"]
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-import {HttpClient, HttpHeaders} from '@angular/common/http';
-import {Component, OnChanges, OnInit} from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import {Component, OnChanges, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {UntypedFormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
-import {MatLegacyButtonModule as MatButtonModule} from '@angular/material/legacy-button';
-import {MatLegacyChipInputEvent as MatChipInputEvent, MatLegacyChipsModule as MatChipsModule} from '@angular/material/legacy-chips';
-import {MAT_LEGACY_DIALOG_DATA as MAT_DIALOG_DATA, MatLegacyDialog as MatDialog, MatLegacyDialogModule as MatDialogModule, MatLegacyDialogRef as MatDialogRef} from '@angular/material/legacy-dialog';
-import {MatLegacyFormFieldModule as MatFormFieldModule} from '@angular/material/legacy-form-field';
-import {MatLegacyInputModule as MatInputModule} from '@angular/material/legacy-input';
+import {MatButtonModule} from '@angular/material/button';
+import {MatChipInputEvent, MatChipsModule} from '@angular/material/chips';
+import {MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef} from '@angular/material/dialog';
+import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatInputModule} from '@angular/material/input';
 import {Router} from '@angular/router';
 
 import {AuthService} from './authservice';
@@ -29,10 +29,12 @@ import {Download} from './download';
 import {User} from './user.model';
 
 @Component({
-  selector: 'app-thumbnail',
-  templateUrl: './thumbnail.ng.html',
-  styleUrls: ['./thumbnail.scss'],
-  providers: [Download],
+    selector: 'app-thumbnail',
+    templateUrl: './thumbnail.ng.html',
+    styleUrls: ['./thumbnail.scss'],
+    providers: [Download],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class Thumbnail implements OnInit {
   // search keyword
@@ -91,9 +93,11 @@ export class Thumbnail implements OnInit {
 }
 
 @Component({
-  selector: 'upload-form',
-  templateUrl: 'upload-form.html',
-  styleUrls: ['./upload-form.scss']
+    selector: 'upload-form',
+    templateUrl: 'upload-form.html',
+    styleUrls: ['./upload-form.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class UploadForm {
   // hashtags

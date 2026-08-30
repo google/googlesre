@@ -16,13 +16,13 @@
 
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
-import {HttpClientModule} from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {MatLegacyButtonModule as MatButtonModule} from '@angular/material/legacy-button';
-import {MatLegacyChipsModule as MatChipsModule} from '@angular/material/legacy-chips';
-import {MatLegacyDialog as MatDialog, MatLegacyDialogModule as MatDialogModule} from '@angular/material/legacy-dialog';
-import {MatLegacyFormFieldModule as MatFormFieldModule} from '@angular/material/legacy-form-field';
-import {MatLegacyInputModule as MatInputModule} from '@angular/material/legacy-input';
+import {MatButtonModule} from '@angular/material/button';
+import {MatChipsModule} from '@angular/material/chips';
+import {MatDialog, MatDialogModule} from '@angular/material/dialog';
+import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatInputModule} from '@angular/material/input';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 
 import { AppRoutingModule } from './app-routing.module';
@@ -34,8 +34,7 @@ import { Login } from './login';
 import { Navbar } from './navbar';
 import { Thumbnail, UploadForm } from './thumbnail';
 
-@NgModule({
-    declarations: [
+@NgModule({ declarations: [
         AppComponent,
         Thumbnail,
         UploadForm,
@@ -43,8 +42,7 @@ import { Thumbnail, UploadForm } from './thumbnail';
         Login,
         Download
     ],
-    imports: [
-        MatChipsModule,
+    bootstrap: [AppComponent], imports: [MatChipsModule,
         BrowserAnimationsModule,
         AppRoutingModule,
         MatDialogModule,
@@ -52,13 +50,9 @@ import { Thumbnail, UploadForm } from './thumbnail';
         ReactiveFormsModule,
         FormsModule,
         MatButtonModule,
-        MatFormFieldModule,
-        HttpClientModule,
-    ],
-    providers: [
+        MatFormFieldModule], providers: [
         AuthGuard,
-        AuthService
-    ],
-    bootstrap: [AppComponent]
-})
+        AuthService,
+        provideHttpClient(withXhr(), withInterceptorsFromDi())
+    ] })
 export class AppModule { }

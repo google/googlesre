@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {Router} from '@angular/router';
 import {Observable} from 'rxjs';
 
@@ -22,9 +22,11 @@ import {AuthService} from './authservice';
 import {User} from './user.model';
 
 @Component({
-  selector: 'app-navbar',
-  templateUrl: './navbar.ng.html',
-  styleUrls: ['./navbar.scss']
+    selector: 'app-navbar',
+    templateUrl: './navbar.ng.html',
+    styleUrls: ['./navbar.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class Navbar {
   title: string;

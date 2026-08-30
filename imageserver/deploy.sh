@@ -181,17 +181,19 @@ create_bucket() {
 }
 
 create_firestore() {
-  enable_api appengine.googleapis.com
-  if ! gcloud app describe 2>/dev/null | grep -q name:; then
-    log "Creating App Engine application"
-    gcloud app create --region="${REGION}"
-  fi
-
-  if ! gcloud firestore databases list 2>/dev/null | grep -q name:; then
-    log "Creating firestore database"
-    gcloud firestore databases create --location="${LOCATION}"
-  fi
   enable_api firestore.googleapis.com
+
+  local database="${FIRESTORE_DATABASE:-photos}"
+  if gcloud firestore databases list --format="value(name)" 2>/dev/null \
+     | grep -q "/databases/${database}\$"; then
+    log "Using existing firestore database: ${database}"
+  else
+    log "Creating firestore database: ${database}"
+    gcloud firestore databases create \
+      --database="${database}" \
+      --location="${LOCATION}" \
+      --type=firestore-native
+  fi
 }
 
 main() {

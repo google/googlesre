@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {Router} from '@angular/router';
 import {AuthService} from './authservice';
 
 @Component({
-  selector: 'app-login',
-  templateUrl: './login.ng.html',
-  styleUrls: ['./login.scss']
+    selector: 'app-login',
+    templateUrl: './login.ng.html',
+    styleUrls: ['./login.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class Login {
   constructor(private auth: AuthService, private router: Router) {}

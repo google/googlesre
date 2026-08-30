@@ -1,9 +1,10 @@
-FROM docker.io/library/node:18
+FROM docker.io/library/node:24
 WORKDIR /app
-COPY ui-frontend .
+COPY ui-frontend/package.json ui-frontend/package-lock.json ./
 RUN npm ci
+COPY ui-frontend .
 RUN npm run ng build -- --configuration production
 
-FROM docker.io/library/nginx
+FROM docker.io/library/nginx:stable
 WORKDIR /usr/share/nginx/html
-COPY --from=0 /app/dist/ui-frontend .
+COPY --from=0 /app/dist/ui-frontend/browser .

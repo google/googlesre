@@ -78,32 +78,43 @@ spec:
     app: ui-frontend
   type: NodePort
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: external-ingress
   namespace: default
 spec:
-  backend:
-    serviceName: ui-frontend-service
-    servicePort: 80
+  defaultBackend:
+    service:
+      name: ui-frontend-service
+      port:
+        number: 80
   rules:
   - http:
       paths:
       - path: /download/*
+        pathType: ImplementationSpecific
         backend:
-          serviceName: download-frontend-service
-          servicePort: 8080
+          service:
+            name: download-frontend-service
+            port:
+              number: 8080
       - path: /search
+        pathType: ImplementationSpecific
         backend:
-          serviceName: search-frontend-service
-          servicePort: 8080
+          service:
+            name: search-frontend-service
+            port:
+              number: 8080
       - path: /upload
+        pathType: ImplementationSpecific
         backend:
-          serviceName: upload-frontend-service
-          servicePort: 8080
+          service:
+            name: upload-frontend-service
+            port:
+              number: 8080
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: internal-ingress
@@ -111,21 +122,32 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: "gce-internal"
 spec:
-  backend:
-    serviceName: ui-frontend-service
-    servicePort: 80
+  defaultBackend:
+    service:
+      name: ui-frontend-service
+      port:
+        number: 80
   rules:
   - http:
       paths:
       - path: /download/*
+        pathType: ImplementationSpecific
         backend:
-          serviceName: download-frontend-service
-          servicePort: 8080
+          service:
+            name: download-frontend-service
+            port:
+              number: 8080
       - path: /search
+        pathType: ImplementationSpecific
         backend:
-          serviceName: search-frontend-service
-          servicePort: 8080
+          service:
+            name: search-frontend-service
+            port:
+              number: 8080
       - path: /upload
+        pathType: ImplementationSpecific
         backend:
-          serviceName: upload-frontend-service
-          servicePort: 8080
+          service:
+            name: upload-frontend-service
+            port:
+              number: 8080

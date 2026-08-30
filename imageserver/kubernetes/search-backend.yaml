@@ -38,7 +38,7 @@ spec:
         - image: gcr.io/sre-classroom-image-server/search-backend
           imagePullPolicy: IfNotPresent
           name: search-backend-1
-          args: ["-firestore_project", "FIRESTORE_PROJECT"]
+          args: ["-firestore_project", "FIRESTORE_PROJECT", "-firestore_database", "FIRESTORE_DATABASE"]
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler

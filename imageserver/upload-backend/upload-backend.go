@@ -47,6 +47,7 @@ var (
 	firestoreLatestPath   = flag.String("firestore_latest_path", "latest", "path for storing latest images")
 	firestoreLatestPhotos = flag.Uint("firestore_latest_photos", 10, "number of latest images to store")
 	firestoreProject      = flag.String("firestore_project", "sre-classroom-image-server", "firestore project to use for storing tags")
+	firestoreDatabase     = flag.String("firestore_database", "(default)", "firestore database to use for storing tags")
 	firestoreDryRun       = flag.Bool("firestore_dry_run", false, "disable firestore writes")
 	listenPort            = flag.String("listen_port", ":8080", "start server on this port")
 	storageBucket         = flag.String("storage_bucket", "sre-classroom-image-server_photos", "storage bucket to use for storing photos")
@@ -200,7 +201,7 @@ func (s *UploadPhotoServer) CreateMetadata(ctx context.Context, request *pb.Crea
 	}
 
 	start := time.Now()
-	client, err := firestore.NewClient(ctx, *firestoreProject)
+	client, err := firestore.NewClientWithDatabase(ctx, *firestoreProject, *firestoreDatabase)
 	if err != nil {
 		glog.Errorf("firestore client failed: %v", err)
 		return nil, err

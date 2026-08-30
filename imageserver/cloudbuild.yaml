@@ -34,6 +34,7 @@ steps:
         sed -i 's|gcr.io/.*|gcr.io/$PROJECT_ID/$_CONTAINER_NAME|' kubernetes/$_CONTAINER_NAME.yaml
         sed -i 's|BUCKET_NAME|${PROJECT_ID}_photos|' kubernetes/$_CONTAINER_NAME.yaml
         sed -i 's|FIRESTORE_PROJECT|$PROJECT_ID|' kubernetes/$_CONTAINER_NAME.yaml
+        sed -i 's|FIRESTORE_DATABASE|photos|' kubernetes/$_CONTAINER_NAME.yaml
     id: Prepare configs
     entrypoint: sh
   - name: gcr.io/cloud-builders/gke-deploy

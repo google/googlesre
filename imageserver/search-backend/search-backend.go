@@ -29,12 +29,13 @@ import (
 )
 
 var (
-	firestoreLatest  = flag.String("firestore_latest", "latest", "firestore collection storing latest photos")
-	firestoreProject = flag.String("firestore_project", "sre-classroom-image-server", "firestore project to use for storing tags")
-	firestoreDryRun  = flag.Bool("firestore_dry_run", false, "disable firestore reads")
-	listenPort       = flag.String("listen_port", ":8080", "start server on this port")
-	thumbnailCount   = flag.Int("thumbnail_count", 10, "number of thumbnails to return")
-	thumbnailPrefix  = flag.String("thumbnail_prefix", "/download/thumbnail_", "URL prefix for returned thumbnails")
+	firestoreLatest   = flag.String("firestore_latest", "latest", "firestore collection storing latest photos")
+	firestoreProject  = flag.String("firestore_project", "sre-classroom-image-server", "firestore project to use for storing tags")
+	firestoreDatabase = flag.String("firestore_database", "(default)", "firestore database to use for storing tags")
+	firestoreDryRun   = flag.Bool("firestore_dry_run", false, "disable firestore reads")
+	listenPort        = flag.String("listen_port", ":8080", "start server on this port")
+	thumbnailCount    = flag.Int("thumbnail_count", 10, "number of thumbnails to return")
+	thumbnailPrefix   = flag.String("thumbnail_prefix", "/download/thumbnail_", "URL prefix for returned thumbnails")
 )
 
 // hashtagPrefix namespaces hashtag-index collections so that /search cannot
@@ -60,7 +61,7 @@ func (s *GetThumbnailServer) GetThumbnail(ctx context.Context, request *pb.GetTh
 		return &pb.GetThumbnailImagesResponse{StorageUrl: urls}, nil
 	}
 
-	client, err := firestore.NewClient(ctx, *firestoreProject)
+	client, err := firestore.NewClientWithDatabase(ctx, *firestoreProject, *firestoreDatabase)
 	if err != nil {
 		glog.Errorf("firestore client failed: %v", err)
 		return nil, err
